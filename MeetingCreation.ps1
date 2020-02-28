@@ -137,7 +137,8 @@ Function CreateMeeting{
 	$queryUrlUsers = $graphUrl + "/v1.0/me"
 
 	$user = Invoke-WebRequest -Method Get -Uri $queryUrlUsers -ContentType "application/json" -Headers @{Authorization = "Bearer $token"} -ErrorAction Stop
-
+	
+	return
 }
 
 Function GenerateAttendeeList{

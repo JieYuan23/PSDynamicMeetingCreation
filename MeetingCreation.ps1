@@ -160,7 +160,7 @@ foreach ($line in $file)
 	$subject = $lineValues[1]
 	$listAttendees = $lineValues[2..($lineValues.Length-1)]
 	
-	# Create meeting and output generation: c_corso,subject,join link,meeting options url
+	# Create meeting and output generation: c_corso,subject,meeting id,join link,meeting options url
 	$meetingOutput = CreateMeeting($code, $subject, $listAttendees, $token)
 	
 	# Write output

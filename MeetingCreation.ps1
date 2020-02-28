@@ -103,16 +103,17 @@ $tenantId = "42d4a46d-9bc5-454b-821c-b1610ac5de9b"
 #$token = GetToken
 
 $csvOut = "C:\temp\meetingsoutput.csv"
+if (Test-Path $csvOut) {
+	Remove-Item $csvOut
+	}
 
 # Get input CSV and scan line by line
 $csv = Get-Content "C:\temp\InputCorsi.csv"
 
 foreach ($line in $csv)
 {
-	$line.Read | out-host
-	return $line
-	$line='cclass1,Docente_Incarico_cclass1,alexw@M365EDU702432.onmicrosoft.com,fatimaz@M365EDU702432.onmicrosoft.com'
-	$lineValues = $line.Split(',').Trim()
+	$lineValues = $line.Split(';').Trim()
+	Write-Host $line
 
 	$code = $lineValues[0]
 	$subject = $lineValues[1]
@@ -171,12 +172,11 @@ foreach ($line in $csv)
 	$meetingCode = $response.chatInfo.threadId.Replace(":meeting","_meeting")
 
     $meetingOptionUrl = "https://teams.microsoft.com/meetingOptions/?organizerId=" + $meetingOrganizer + "&tenantId=" + $tenantId + "&threadId=" + $meetingCode + "&messageId=0&language=en-US"
-
+	$joinWebUrl= "https://login.microsoftonline.com/common/oauth2/authorize?response_type=id_token&client_id=5e3ce6c0-2b1f-4285-8d4b-75ee78787346&redirect_uri="+$response.joinWebUrl
 	# c_corso,subject,meeting id,join link,meeting options url
-	$meetingOutput = $code + "," + $subject + "," + $response.id + "," + $response.joinWebUrl + "," + $meetingOptionUrl
-	
+	$meetingOutput = $code + "," + $subject + "," + $response.id + "," + $joinWebUrl + "," + $meetingOptionUrl
+	Write-Host $meetingOutput
+
 	# Write output
 	Add-content $csvOut -value $meetingOutput
 }
-
-

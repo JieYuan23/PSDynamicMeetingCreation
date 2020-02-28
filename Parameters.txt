@@ -1,0 +1,6 @@
+In file: CSV with the following values
+c_classe key for output file
+Subject ("Nome Docente + Nome Incarico + c_classe")
+CodicePersona@polimi.it(1+) presenters
+
+Static parameters: start/end date: 1/3/2020, 30/06/2020 (UTC format: 2020-03-01T08:30:00.2444915-07:00)

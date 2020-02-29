@@ -1,6 +1,6 @@
 
 $graphUrl = 'https://graph.microsoft.com'
-$tenantId = "0a17712b-6df3-425d-808e-309df28a5eeb"
+$tenantId = "42d4a46d-9bc5-454b-821c-b1610ac5de9b"
 
 # Add required assemblies
 #Function GetToken
@@ -9,7 +9,7 @@ $tenantId = "0a17712b-6df3-425d-808e-309df28a5eeb"
 	# Get OAuth token for a AAD User (returned as $token)
 	Add-Type -AssemblyName System.Web, PresentationFramework, PresentationCore
 	# Application (client) ID, tenant ID and redirect URI
-	$clientId = "e1b7697f-93df-4607-9f30-d854e0844f88"
+	$clientId = "0ba51b74-369c-4494-8d48-0b4041a96f0c"
 	$clientSecret = 'H8I=A4We5:zKkXm0GslbH@YprlT-?eVY'
 	$redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
 
@@ -129,6 +129,9 @@ foreach ($line in $csv)
 	
 	# Create meeting and output generation: c_corso,subject,meeting id,join link,meeting options url
 
+	$staticUserId = 'c134eca6-67d6-4bec-a4f3-21a1fd0fd4b8'
+	$staticUserDispName = 'Adele Vance'
+	$staticUserUpn = 'AdeleV@M365EDU702432.OnMicrosoft.com'
 	$meetingbody = '
     {
 		"startDateTime":"2020-03-01T14:30:34.2444915-07:00",
@@ -139,14 +142,15 @@ foreach ($line in $csv)
 				{
 					"identity":{
 						"user":{
-							"displayname":"Adele Vance",
-							"id":"c134eca6-67d6-4bec-a4f3-21a1fd0fd4b8"
+							"displayname":"' + $staticUserDispName + '",
+							"id":"' + $staticUserId + '"
 						}
 					},
-					"upn":"AdeleV@M365EDU702432.OnMicrosoft.com"
+					"upn":"' + $staticUserUpn + '"
 				}
 				'
 				
+	$presentersPayload = '{"objectId":"'+$staticUserId+'","mri":"8:orgid:'+$staticUserId+'","upn":"'+$staticUserUpn+'"}'
     foreach ($attendee in $listAttendees) {
 
         $getUserQueryUrl = $graphUrl + "/v1.0/users/$attendee"
@@ -165,6 +169,13 @@ foreach ($line in $csv)
 				"upn": "'+$user.userPrincipalName+'"
 			}
 		'
+
+        if (-not ([string]::IsNullOrEmpty($presentersPayload)))
+        {
+            $presentersPayload += ","
+		}
+		
+		$presentersPayload += '{"objectId":"'+$user.id+'","mri":"8:orgid:'+$user.id+'","upn":"'+$user.userPrincipalName+'"}'
 	}
 	
 	$meetingbody+='
@@ -183,14 +194,31 @@ foreach ($line in $csv)
 	Add-content $logs -value $string
 
 	$meetingOrganizer = $response.participants.organizer.identity.user.id
-	$meetingCode = $response.chatInfo.threadId.Replace(":meeting","_meeting")
+	$threadId = $response.chatInfo.threadId.Replace(":meeting","_meeting")
 
-    $meetingOptionUrl = "https://teams.microsoft.com/meetingOptions/?organizerId=" + $meetingOrganizer + "&tenantId=" + $tenantId + "&threadId=" + $meetingCode + "&messageId=0&language=en-US"
+    $meetingOptionUrl = "https://teams.microsoft.com/meetingOptions/?organizerId=" + $meetingOrganizer + "&tenantId=" + $tenantId + "&threadId=" + $threadId + "&messageId=0&language=en-US"
 	$joinWebUrl= "https://login.microsoftonline.com/common/oauth2/authorize?response_type=id_token&client_id=5e3ce6c0-2b1f-4285-8d4b-75ee78787346&redirect_uri="+$response.joinWebUrl
 	# c_corso,subject,meeting id,join link,meeting options url
 	$meetingOutput = $code + "," + $subject + "," + $response.id + "," + $joinWebUrl + "," + $meetingOptionUrl
 	
-
 	# Write output
 	Add-content $csvOut -value $meetingOutput
+	
+	# Test: change meeting options
+	$apiTeamsAuth = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkhsQzBSMTJza3hOWjFXUXdtak9GXzZ0X3RERSIsImtpZCI6IkhsQzBSMTJza3hOWjFXUXdtak9GXzZ0X3RERSJ9.eyJhdWQiOiJodHRwczovL2FwaS5zcGFjZXMuc2t5cGUuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNDJkNGE0NmQtOWJjNS00NTRiLTgyMWMtYjE2MTBhYzVkZTliLyIsImlhdCI6MTU4Mjk2NzUzOCwibmJmIjoxNTgyOTY3NTM4LCJleHAiOjE1ODI5NzE0MzgsImFjY3QiOjAsImFjciI6IjEiLCJhaW8iOiI0Mk5nWUFnUGNINVV4QmRVbjY3NCtQVHBqb0k1d3NrZVRNV21WcW5OdWZ1WkxlWW1hQUlBIiwiYW1yIjpbInB3ZCJdLCJhcHBpZCI6IjVlM2NlNmMwLTJiMWYtNDI4NS04ZDRiLTc1ZWU3ODc4NzM0NiIsImFwcGlkYWNyIjoiMCIsImF1dGhfdGltZSI6MTU4MjkwNTA5OSwiZmFtaWx5X25hbWUiOiJBZG1pbmlzdHJhdG9yIiwiZ2l2ZW5fbmFtZSI6IlN5c3RlbSIsImlwYWRkciI6IjkzLjQzLjIwMi4xMiIsIm5hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsIm9pZCI6IjQ0NTMxNDkyLTA3MTgtNDAyNC04YjZjLWMxNGZkM2E5ZTczYyIsInB1aWQiOiIxMDAzMjAwMDRENkFFN0Y2Iiwic2NwIjoidXNlcl9pbXBlcnNvbmF0aW9uIiwic3ViIjoiWjhIZEZKdTRMc0syUjVjaFNvZzVhVUJ6TGZwb3hBZlNuOTdOXy1ob1l3cyIsInRpZCI6IjQyZDRhNDZkLTliYzUtNDU0Yi04MjFjLWIxNjEwYWM1ZGU5YiIsInVuaXF1ZV9uYW1lIjoiYWRtaW5ATTM2NUVEVTcwMjQzMi5vbm1pY3Jvc29mdC5jb20iLCJ1cG4iOiJhZG1pbkBNMzY1RURVNzAyNDMyLm9ubWljcm9zb2Z0LmNvbSIsInV0aSI6InNDOHNkM0x4WkVxZFdXd0ZraVYzQUEiLCJ2ZXIiOiIxLjAifQ.ZjHMfIgtSbEUELNgff-_JF3vNvof51ggJvVF7etDH0VJEs3POtPpU5xYHuBiXtmXBurYAhsVPO_KPJALq08po8JjSj1JQIErZlVik1y7V7_qeE09VGML5DhJEFs5X8kd3GrxYfWU8QIZx_rvb2kLpCdPZM344kZjssJ4ZfybsOnwvVsgkY-3QbEWLCzZryNUOw3z-_WrOuzNelseYpi9OSPxID7-bQ8qphEMV_M7LrvAL3yJzhCPhMUGGhjyX8a0hQRIlusw32ccfyVTGd0y5-_qet9ndo5WMye-Ff-eUr2XLeH3KuMFJgcXV65c8qIwOfYUf3fhmfSthakPIa1v3A"
+	$apiTeamsEndPoint = "https://teams.microsoft.com/api/mt/emea/beta/meetings/v1/options/42d4a46d-9bc5-454b-821c-b1610ac5de9b/44531492-0718-4024-8b6c-c14fd3a9e73c/$threadId/0/"
+    $apiTeamsheaders = @{
+        Authorization = ($apiTeamsAuth)
+        Accept= "*/*"
+	}
+	
+    $attendeeSelectionPayload = '{"options":[{"name":"AutoAdmittedUsers","currentValue":"EveryoneInCompany","type":"List"},{"name":"PresenterOption","currentValue":"SpecifiedPeople","type":"List"},{"name":"SpecifiedPresenters","type":"PresenterSelection","selectedPeople":[' + $presentersPayload + ']}]}'
+
+	$string = "Presenters selection payload:" + $attendeeSelectionPayload
+	Add-content $logs -value $string
+
+    $attendeelistSetting = Invoke-WebRequest -Uri $apiTeamsEndPoint -Method Post -Headers $apiTeamsheaders -Body $attendeeSelectionPayload -ContentType "application/json;charset=UTF-8"
+	
+	$string = "Response change presenters" + $attendeelistSetting
+	Add-content $logs -value $string
 }

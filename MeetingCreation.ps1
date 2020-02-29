@@ -1,6 +1,6 @@
 
 $graphUrl = 'https://graph.microsoft.com'
-$tenantId = "42d4a46d-9bc5-454b-821c-b1610ac5de9b"
+$tenantId = "0a17712b-6df3-425d-808e-309df28a5eeb"
 
 # Add required assemblies
 #Function GetToken
@@ -9,7 +9,7 @@ $tenantId = "42d4a46d-9bc5-454b-821c-b1610ac5de9b"
 	# Get OAuth token for a AAD User (returned as $token)
 	Add-Type -AssemblyName System.Web, PresentationFramework, PresentationCore
 	# Application (client) ID, tenant ID and redirect URI
-	$clientId = "0ba51b74-369c-4494-8d48-0b4041a96f0c"
+	$clientId = "e1b7697f-93df-4607-9f30-d854e0844f88"
 	$clientSecret = 'H8I=A4We5:zKkXm0GslbH@YprlT-?eVY'
 	$redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient"
 
@@ -107,13 +107,21 @@ if (Test-Path $csvOut) {
 	Remove-Item $csvOut
 	}
 
+	
+$now = Get-Date -Format "MM_dd_yyyy_HH_mm"
+$logs = "C:\temp\meetingslogs_" + $now + ".txt"
+
+$string = "Token: " + $token
+Add-content $logs -value $string
+
 # Get input CSV and scan line by line
 $csv = Get-Content "C:\temp\InputCorsi.csv"
-
+$counter = 1
 foreach ($line in $csv)
 {
 	$lineValues = $line.Split(';').Trim()
-	Write-Host $line
+	$string =  "#" + $counter++ + " | " + $line
+	Add-content $logs -value $string
 
 	$code = $lineValues[0]
 	$subject = $lineValues[1]
@@ -164,9 +172,15 @@ foreach ($line in $csv)
 		}
 	}'
 
+	$string = "Body:" + $meetingbody
+	Add-content $logs -value $string
+	
 	# Create meeting Invok
 	$meetingQueryUrl = $graphUrl + "/v1.0/me/onlineMeetings"
 	$response = Invoke-RestMethod -Method Post -Uri $meetingQueryUrl -ContentType 'application/json' -Headers @{Authorization = "Bearer $token"} -Body $meetingbody
+
+	$string = "Response" + $response
+	Add-content $logs -value $string
 
 	$meetingOrganizer = $response.participants.organizer.identity.user.id
 	$meetingCode = $response.chatInfo.threadId.Replace(":meeting","_meeting")
@@ -175,7 +189,7 @@ foreach ($line in $csv)
 	$joinWebUrl= "https://login.microsoftonline.com/common/oauth2/authorize?response_type=id_token&client_id=5e3ce6c0-2b1f-4285-8d4b-75ee78787346&redirect_uri="+$response.joinWebUrl
 	# c_corso,subject,meeting id,join link,meeting options url
 	$meetingOutput = $code + "," + $subject + "," + $response.id + "," + $joinWebUrl + "," + $meetingOptionUrl
-	Write-Host $meetingOutput
+	
 
 	# Write output
 	Add-content $csvOut -value $meetingOutput

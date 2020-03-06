@@ -101,14 +101,13 @@ $tenantId = "42d4a46d-9bc5-454b-821c-b1610ac5de9b"
 
 # Code starts here _____________________________________________
 #$token = GetToken
+$now = Get-Date -Format "MM_dd_yyyy_HH_mm"
 
-$csvOut = "C:\temp\meetingsoutput.csv"
+$csvOut = "C:\temp\meetingsoutput_" + $now + ".csv"
 if (Test-Path $csvOut) {
 	Remove-Item $csvOut
 	}
-
 	
-$now = Get-Date -Format "MM_dd_yyyy_HH_mm"
 $logs = "C:\temp\meetingslogs_" + $now + ".txt"
 
 $string = "Token: " + $token

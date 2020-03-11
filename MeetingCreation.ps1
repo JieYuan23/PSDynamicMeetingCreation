@@ -196,7 +196,7 @@ foreach ($line in $csv)
 	$threadId = $response.chatInfo.threadId.Replace(":meeting","_meeting")
 
     $meetingOptionUrl = "https://teams.microsoft.com/meetingOptions/?organizerId=" + $meetingOrganizer + "&tenantId=" + $tenantId + "&threadId=" + $threadId + "&messageId=0&language=en-US"
-	$joinWebUrl= "https://login.microsoftonline.com/common/oauth2/authorize?response_type=id_token&client_id=5e3ce6c0-2b1f-4285-8d4b-75ee78787346&redirect_uri="+$response.joinWebUrl
+	$joinWebUrl= $response.joinWebUrl
 	# c_corso,subject,meeting id,join link,meeting options url
 	$meetingOutput = $code + "," + $subject + "," + $response.id + "," + $joinWebUrl + "," + $meetingOptionUrl
 	
